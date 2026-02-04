@@ -1,0 +1,19 @@
+CABINET FIXES NEEDED:
+
+1. Add standard cabinet sizing constants before RealisticCabinet function (around line 336):
+   - STANDARD_CABINET_WIDTHS = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+   - STANDARD_BASE_DEPTH = 2.0 (24")
+   - STANDARD_UPPER_DEPTH = 1.0 (12")
+   - STANDARD_BASE_HEIGHT = 2.875 (34.5")
+   - STANDARD_UPPER_HEIGHT = 2.5 (30")
+
+2. Improve cabinet textures by adding frame/panel structure:
+   - Add darker frame edges (0.04 feet wide)
+   - Add lighter panel center
+   - Improve gap shadows
+
+3. Use fitStandardCabinets() function to calculate cabinet widths instead of dividing evenly
+
+4. Update cabinet positioning to use standard sizes and proper spacing
+
+See the codebase for full implementation details.
