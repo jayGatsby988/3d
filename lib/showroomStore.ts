@@ -28,9 +28,12 @@ interface ShowroomState {
   savedVersions: SavedVersion[];
   /** Full scene analysis from GPT - used to build procedural 3D kitchen */
   sceneAnalysis: SceneAnalysis | null;
+  /** User-selected layout (overrides AI): U-shaped, L-shaped, or single-wall (flat) */
+  userLayout: 'U-shaped' | 'L-shaped' | 'single-wall' | null;
 
   setSettings: (settings: Partial<ProjectSettings>) => void;
   setSceneAnalysis: (analysis: SceneAnalysis | null) => void;
+  setUserLayout: (layout: 'U-shaped' | 'L-shaped' | 'single-wall' | null) => void;
   updateMaterial: (category: keyof ProjectSettings['materials'], material: string, tier: any) => void;
   updateUpgrade: (upgrade: keyof ProjectSettings['upgrades'], enabled: boolean) => void;
   updateRoomSize: (squareFeet: number) => void;
@@ -62,6 +65,7 @@ const useShowroomStore = create<ShowroomState>((set, get) => {
     autoRotate: true,
     savedVersions: [],
     sceneAnalysis: null,
+    userLayout: null,
 
     setSettings: (newSettings) => {
       const currentSettings = get().settings;
@@ -174,6 +178,8 @@ const useShowroomStore = create<ShowroomState>((set, get) => {
       const estimate = calculateEstimate(updatedSettings);
       set({ sceneAnalysis: analysis, settings: updatedSettings, estimate });
     },
+
+    setUserLayout: (layout) => set({ userLayout: layout }),
 
     setLightingScene: (scene) => set({ lightingScene: scene }),
 

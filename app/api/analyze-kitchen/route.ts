@@ -421,14 +421,25 @@ function getDefaultScene(): SceneAnalysis {
   };
 }
 
+const USER_LAYOUT_TO_ROOM: Record<string, 'U-shaped' | 'L-shaped' | 'single-wall'> = {
+  'U-shaped': 'U-shaped',
+  'L-shaped': 'L-shaped',
+  'single-wall': 'single-wall',
+};
+
 export async function POST(request: Request) {
   try {
-    const { image_url } = await request.json();
+    const body = await request.json();
+    const image_url = body?.image_url;
+    const user_layout = body?.user_layout as string | undefined;
     
     if (!image_url) {
       console.warn('[Scene Analysis] No image provided, using defaults');
       return NextResponse.json(getDefaultScene());
     }
+
+    const forcedLayout = user_layout && USER_LAYOUT_TO_ROOM[user_layout] ? USER_LAYOUT_TO_ROOM[user_layout] : null;
+    if (forcedLayout) console.log('[Scene Analysis] User layout:', forcedLayout);
 
     console.log('[Scene Analysis] Starting GPT-4o Vision analysis...');
     
@@ -692,8 +703,35 @@ Sample EXACT colors from pixels. Return ONLY valid JSON.`,
           const parsed = JSON.parse(content);
           analysis = parsed as SceneAnalysis;
 
+          // User chose layout: override and force runs to match
+          if (forcedLayout) {
+            analysis.room.layout = forcedLayout;
+            const wantWalls = forcedLayout === 'U-shaped' ? ['back', 'left', 'right'] : forcedLayout === 'L-shaped' ? ['back', 'left'] : ['back'];
+            const existing = analysis.cabinets?.runs ?? [];
+            const hasWall = (w: string) => existing.some((r: { wall: string }) => r.wall === w);
+            if (forcedLayout === 'U-shaped' && (!hasWall('left') || !hasWall('right'))) {
+              const template = existing[0];
+              const run = (wall: 'back' | 'left' | 'right') => ({
+                wall,
+                startX: template?.startX ?? 0,
+                lengthFeet: template?.lengthFeet ?? 4,
+                hasUpperCabinets: template?.hasUpperCabinets ?? true,
+                baseCabinetCount: template?.baseCabinetCount ?? 2,
+                upperCabinetCount: template?.upperCabinetCount ?? 2,
+              });
+              if (!hasWall('back')) analysis.cabinets.runs.unshift(run('back'));
+              if (!hasWall('left')) analysis.cabinets.runs.push(run('left'));
+              if (!hasWall('right')) analysis.cabinets.runs.push(run('right'));
+            } else if (forcedLayout === 'L-shaped' && existing.length > 2) {
+              analysis.cabinets.runs = existing.slice(0, 2);
+            } else if (forcedLayout === 'single-wall' && existing.length > 1) {
+              analysis.cabinets.runs = existing.filter((r: { wall: string }) => r.wall === 'back').slice(0, 1);
+              if (analysis.cabinets.runs.length === 0 && existing[0]) analysis.cabinets.runs = [{ ...existing[0], wall: 'back' as const }];
+            }
+          }
+
           // Sync cabinet runs to the chosen layout (trust visual: U vs L)
-          if (analysis.cabinets?.runs && analysis.room?.layout) {
+          if (analysis.cabinets?.runs && analysis.room?.layout && !forcedLayout) {
             const layout = analysis.room.layout;
             const runs = analysis.cabinets.runs;
             const walls = runs.map((r: { wall: string }) => r.wall);

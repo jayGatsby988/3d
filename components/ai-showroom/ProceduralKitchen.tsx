@@ -413,6 +413,7 @@ function RealisticCabinet({
   isPremiumHardware,
   isUpper = false,
   isDrawer = false,
+  hideToeKick = false,
 }: {
   position: [number, number, number];
   width: number;
@@ -423,6 +424,7 @@ function RealisticCabinet({
   isPremiumHardware: boolean;
   isUpper?: boolean;
   isDrawer?: boolean;
+  hideToeKick?: boolean;
 }) {
   const pullLength = isPremiumHardware ? 0.15 : 0.1;
   const pullRadius = 0.008;
@@ -678,8 +680,8 @@ function RealisticCabinet({
         </>
       )}
       
-      {/* Toe kick */}
-      {!isUpper && (
+      {/* Toe kick - hidden when run uses continuous toe kick */}
+      {!isUpper && !hideToeKick && (
         <mesh position={[0, -height / 2 - 0.04, depth / 2 - 0.06]}>
           <boxGeometry args={[width - 0.03, 0.08, 0.04]} />
           <meshStandardMaterial color="#0F0F0F" roughness={0.9} />
@@ -1982,6 +1984,7 @@ function SlabCabinet({
   hardwareMat,
   isUpper = false,
   hasHandle = true,
+  hideToeKick = false,
 }: {
   position: [number, number, number];
   width: number;
@@ -1991,6 +1994,7 @@ function SlabCabinet({
   hardwareMat: { color: string; roughness: number; metalness: number };
   isUpper?: boolean;
   hasHandle?: boolean;
+  hideToeKick?: boolean;
 }) {
   const doorGap = 0.002; // Minimal gap for seamless look
   const doorThickness = 0.022;
@@ -2125,8 +2129,8 @@ function SlabCabinet({
         </>
       )}
       
-      {/* Toe kick */}
-      {!isUpper && (
+      {/* Toe kick - hidden when run uses continuous toe kick */}
+      {!isUpper && !hideToeKick && (
         <mesh position={[0, -height / 2 - 0.04, depth / 2 - 0.05]}>
           <boxGeometry args={[width - 0.02, 0.08, 0.04]} />
           <meshStandardMaterial color="#0A0A0A" roughness={0.9} />
@@ -3043,48 +3047,6 @@ export default function ProceduralKitchen() {
   const fridgeColor = appliances?.refrigerator?.color ?? '#C0C0C0';
   const fridgeStyle = appliances?.refrigerator?.style ?? 'french-door';
 
-  // Fridge always at exact end of cabinet run (flush with cabinets)
-  const fridgePlacement = useMemo(() => {
-    if (!hasFridge || !cabinetRuns.length) return null;
-    const run = cabinetRuns.find(r => r.wall === fridgeWall);
-    if (!run) return null;
-    const runLen = run.lengthFeet;
-    const depthOffset = 1.2; // fridge sticks out like cabinets
-    const atHighEnd = fridgePos >= 0.5; // which end of run (0 = start, 1 = end)
-    const half = fridgeWidth / 2;
-    let position: [number, number, number];
-    let rotation: [number, number, number];
-    switch (fridgeWall) {
-      case 'back':
-        position = [
-          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
-          2.9,
-          -roomDepth / 2 + cabinetDepth / 2 + depthOffset,
-        ];
-        rotation = [0, 0, 0];
-        break;
-      case 'left':
-        position = [
-          -roomWidth / 2 + cabinetDepth / 2 + depthOffset,
-          2.9,
-          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
-        ];
-        rotation = [0, Math.PI / 2, 0];
-        break;
-      case 'right':
-        position = [
-          roomWidth / 2 - cabinetDepth / 2 - depthOffset,
-          2.9,
-          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
-        ];
-        rotation = [0, -Math.PI / 2, 0];
-        break;
-      default:
-        return null;
-    }
-    return { position, rotation };
-  }, [hasFridge, fridgeWall, fridgePos, fridgeWidth, cabinetRuns, roomWidth, roomDepth, cabinetDepth]);
-  
   // Dishwasher
   const hasDishwasher = appliances?.dishwasher?.present ?? false;
   const dishwasherWall = appliances?.dishwasher?.wall ?? 'back';
@@ -3124,7 +3086,8 @@ export default function ProceduralKitchen() {
   const hasUndercabLighting = settings.upgrades.undercabLighting;
 
   // ========== LAYOUT ==========
-  const roomLayout = sceneAnalysis?.room.layout ?? 'single-wall';
+  const userLayout = useShowroomStore((s) => s.userLayout);
+  const roomLayout = userLayout ?? sceneAnalysis?.room.layout ?? 'single-wall';
   const roomWidth = sceneAnalysis?.room.widthFeet ?? 16;
   const roomDepth = sceneAnalysis?.room.depthFeet ?? 14;
   const ceilingHeight = sceneAnalysis?.room.ceilingHeightFeet ?? 9;
@@ -3190,6 +3153,48 @@ export default function ProceduralKitchen() {
   const upperDepthInches = (sceneAnalysis?.cabinets as any)?.upperDepth ?? 12;
   const cabinetDepth = baseDepthInches / 12;  // Base cabinet depth in feet
   const upperCabinetDepth = upperDepthInches / 12;  // Upper cabinet depth in feet (shallower)
+
+  // Fridge always at exact end of cabinet run (flush with cabinets)
+  const fridgePlacement = useMemo(() => {
+    if (!hasFridge || !cabinetRuns.length) return null;
+    const run = cabinetRuns.find(r => r.wall === fridgeWall);
+    if (!run) return null;
+    const runLen = run.lengthFeet;
+    const depthOffset = 1.2; // fridge sticks out like cabinets
+    const atHighEnd = fridgePos >= 0.5; // which end of run (0 = start, 1 = end)
+    const half = fridgeWidth / 2;
+    let position: [number, number, number];
+    let rotation: [number, number, number];
+    switch (fridgeWall) {
+      case 'back':
+        position = [
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+          2.9,
+          -roomDepth / 2 + cabinetDepth / 2 + depthOffset,
+        ];
+        rotation = [0, 0, 0];
+        break;
+      case 'left':
+        position = [
+          -roomWidth / 2 + cabinetDepth / 2 + depthOffset,
+          2.9,
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+        ];
+        rotation = [0, Math.PI / 2, 0];
+        break;
+      case 'right':
+        position = [
+          roomWidth / 2 - cabinetDepth / 2 - depthOffset,
+          2.9,
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+        ];
+        rotation = [0, -Math.PI / 2, 0];
+        break;
+      default:
+        return null;
+    }
+    return { position, rotation };
+  }, [hasFridge, fridgeWall, fridgePos, fridgeWidth, cabinetRuns, roomWidth, roomDepth, cabinetDepth]);
 
   // Lighting config
   const lightConfig = useMemo(() => {
@@ -3351,19 +3356,18 @@ export default function ProceduralKitchen() {
         const hasDetailedBaseCabinets = (run as any).baseCabinets && (run as any).baseCabinets.length > 0;
         const hasDetailedUpperCabinets = (run as any).upperCabinets && (run as any).upperCabinets.length > 0;
         
-        // Calculate positions for detailed cabinets
+        // Calculate positions for detailed cabinets - always scale to fill run exactly (no gaps)
         const getDetailedCabinetPositions = (cabinets: Array<{widthInches: number; type: string; hasDrawers?: boolean}>, isUpper: boolean) => {
           const totalWidthInches = cabinets.reduce((sum, c) => sum + c.widthInches, 0);
           const totalWidthFeet = totalWidthInches / 12;
-          let currentX = -totalWidthFeet / 2;
+          const scale = totalWidthFeet > 0 ? runLengthFeet / totalWidthFeet : 1;
+          let currentX = -runLengthFeet / 2;
           
-          return cabinets.map((cab, i) => {
-            const widthFeet = cab.widthInches / 12;
+          return cabinets.map((cab) => {
+            const widthFeet = (cab.widthInches / 12) * scale;
             const centerX = currentX + widthFeet / 2;
             currentX += widthFeet;
-            
-            const normalizedPos = (centerX + totalWidthFeet / 2) / totalWidthFeet;
-            
+            const normalizedPos = (centerX + runLengthFeet / 2) / runLengthFeet;
             return {
               ...cab,
               widthFeet,
@@ -3414,6 +3418,7 @@ export default function ProceduralKitchen() {
                         hardwareMat={hardwareMat} 
                         isUpper={false}
                         hasHandle={!isDrawer}
+                        hideToeKick
                       />
                     ) : (
                       <RealisticCabinet 
@@ -3425,6 +3430,7 @@ export default function ProceduralKitchen() {
                         hardwareMat={hardwareMat} 
                         isPremiumHardware={isPremiumHardware} 
                         isDrawer={isDrawer}
+                        hideToeKick
                       />
                     )}
                   </group>
@@ -3441,9 +3447,9 @@ export default function ProceduralKitchen() {
                 return (
                   <group key={`base-${i}`} position={pos} rotation={rotation}>
                     {isSlabStyle ? (
-                      <SlabCabinet position={[0, 0, 0]} width={baseCabinetWidth} height={baseHeight} depth={cabinetDepth} color={cabinetMat.color} hardwareMat={hardwareMat} isUpper={false} hasHandle={!isDrawer} />
+                      <SlabCabinet position={[0, 0, 0]} width={baseCabinetWidth} height={baseHeight} depth={cabinetDepth} color={cabinetMat.color} hardwareMat={hardwareMat} isUpper={false} hasHandle={!isDrawer} hideToeKick />
                     ) : (
-                      <RealisticCabinet position={[0, 0, 0]} width={baseCabinetWidth} height={baseHeight} depth={cabinetDepth} material={cabinetMat} hardwareMat={hardwareMat} isPremiumHardware={isPremiumHardware} isDrawer={isDrawer} />
+                      <RealisticCabinet position={[0, 0, 0]} width={baseCabinetWidth} height={baseHeight} depth={cabinetDepth} material={cabinetMat} hardwareMat={hardwareMat} isPremiumHardware={isPremiumHardware} isDrawer={isDrawer} hideToeKick />
                     )}
                   </group>
                 );

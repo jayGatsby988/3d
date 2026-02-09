@@ -5,7 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Loader2, Sparkles, AlertCircle, Camera, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import useShowroomStore from '@/lib/showroomStore';
 import type { SceneAnalysis } from '@/app/api/analyze-kitchen/route';
+
+export type KitchenLayoutChoice = 'U-shaped' | 'L-shaped' | 'single-wall';
 
 export interface PhotoCompletePayload {
   /** Full scene analysis from GPT-4 Vision */
@@ -63,8 +66,10 @@ const STEP_MESSAGES: Record<AnalysisStep, string> = {
 };
 
 export default function PhotoUploadFlow({ onComplete, onSkip }: PhotoUploadFlowProps) {
+  const setUserLayout = useShowroomStore((s) => s.setUserLayout);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
+  const [layoutChoice, setLayoutChoice] = useState<KitchenLayoutChoice | null>(null);
   const [phase, setPhase] = useState<'upload' | 'processing' | 'done' | 'error'>('upload');
   const [step, setStep] = useState<AnalysisStep>('preparing');
   const [error, setError] = useState<string | null>(null);
@@ -94,10 +99,14 @@ export default function PhotoUploadFlow({ onComplete, onSkip }: PhotoUploadFlowP
 
       // Step 2: Send to GPT-4 Vision for detailed analysis
       setStep('analyzing');
+      if (layoutChoice) setUserLayout(layoutChoice);
       const res = await fetch('/api/analyze-kitchen', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ image_url: dataUri }),
+        body: JSON.stringify({
+          image_url: dataUri,
+          user_layout: layoutChoice ?? undefined,
+        }),
       });
 
       setStep('building');
@@ -121,7 +130,7 @@ export default function PhotoUploadFlow({ onComplete, onSkip }: PhotoUploadFlowP
       setError(msg);
       setPhase('error');
     }
-  }, [file]);
+  }, [file, layoutChoice, setUserLayout]);
 
   const handleEnterShowroom = useCallback(() => {
     if (sceneAnalysis) {
@@ -175,6 +184,28 @@ export default function PhotoUploadFlow({ onComplete, onSkip }: PhotoUploadFlowP
                   </>
                 )}
               </label>
+
+              <div className="w-full space-y-2">
+                <p className="text-sm font-medium text-gray-700">Kitchen layout</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {(['U-shaped', 'L-shaped', 'single-wall'] as const).map((layout) => (
+                    <button
+                      key={layout}
+                      type="button"
+                      onClick={() => setLayoutChoice(layout)}
+                      className={cn(
+                        'rounded-lg border-2 px-3 py-2.5 text-sm font-medium transition-colors',
+                        layoutChoice === layout
+                          ? 'border-indigo-600 bg-indigo-50 text-indigo-700'
+                          : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50'
+                      )}
+                    >
+                      {layout === 'single-wall' ? 'Flat wall' : layout.replace('-', ' ')}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">Choose the layout that matches your kitchen. AI will use this and fill in the rest from the photo.</p>
+              </div>
 
               <div className="flex gap-3">
                 <Button onClick={handleStartAnalysis} disabled={!file} className="flex-1 bg-indigo-600 hover:bg-indigo-700">
