@@ -88,7 +88,7 @@ export default function PhotoUploadFlow({ onComplete, onSkip }: PhotoUploadFlowP
     setStep('preparing');
 
     try {
-      // Step 1: Prepare image
+      // Step 1: Prepare image - convert to base64 data URL
       const dataUri = await fileToResizedDataUri(file);
       setStep('uploading');
 

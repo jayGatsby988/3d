@@ -459,20 +459,15 @@ CABINET ANALYSIS:
 - Note ANY open storage sections (baskets, open shelves built into cabinet run)
 - Look for tall pantry/utility cabinets
 
-LAYOUT DETECTION - CRITICAL, COUNT WALLS WITH CABINETS:
-- "single-wall": Cabinets on exactly ONE wall only (no corners)
-- "L-shaped": Cabinets on exactly TWO walls meeting at ONE corner (like an "L")
-- "U-shaped": Cabinets on THREE walls forming a "U" shape (back wall + BOTH left AND right walls)
-- "galley": Cabinets on TWO PARALLEL walls (not meeting at corner)
+LAYOUT - USE THE VISUAL SHAPE ONLY:
+Look at the photo. What shape do the cabinets/counters form?
+- If the layout LOOKS like a "U" (cabinets on three sides wrapping around the room) → "U-shaped"
+- If the layout LOOKS like an "L" (cabinets on two sides meeting at one corner) → "L-shaped"
+- If only one wall has cabinets → "single-wall"
+- If two opposite walls have cabinets (narrow walk-through) → "galley"
 
-HOW TO DETERMINE LAYOUT:
-1. Look at the BACK wall - are there cabinets?
-2. Look at the LEFT wall - are there cabinets?
-3. Look at the RIGHT wall - are there cabinets?
-4. If cabinets on back + left + right = U-SHAPED (3 walls)
-5. If cabinets on back + left OR back + right = L-SHAPED (2 walls, one corner)
-6. If cabinets on left + right only (parallel) = GALLEY
-7. If cabinets on only ONE wall = SINGLE-WALL
+Ignore wall labels. Just ask: does it look like a U or an L? Use that.
+Then in "runs", include one run per wall that has cabinets: U-shaped = 3 runs (wall "back", "left", "right"). L-shaped = 2 runs (e.g. "back" and "left", or "back" and "right").
 
 SPECIAL FEATURES TO DETECT:
 - Open storage with wicker/rattan baskets
@@ -638,14 +633,13 @@ CABINET DETAILS - BE PRECISE:
 6. Upper cabinets HEIGHT vs base cabinet HEIGHT (uppers are shorter)
 7. Are there ANY open storage sections? Wicker baskets? Open shelves?
 
-LAYOUT - COUNT WALLS WITH CABINETS CAREFULLY:
-1. Does the BACK wall have cabinets? (yes/no)
-2. Does the LEFT wall have cabinets? (yes/no)  
-3. Does the RIGHT wall have cabinets? (yes/no)
-
-If back + left + right ALL have cabinets = "U-shaped" (3 walls)
-If only 2 walls have cabinets meeting at corner = "L-shaped"
-If only 1 wall has cabinets = "single-wall"
+LAYOUT - LOOK AT THE SHAPE IN THE PHOTO:
+Does the kitchen LOOK like a U (three sides with cabinets) or an L (two sides meeting at a corner)?
+- Looks like U → "U-shaped"
+- Looks like L → "L-shaped"
+- One wall only → "single-wall"
+- Two parallel walls → "galley"
+Set "layout" to match what you see. Then add one run per wall with cabinets so the 3D matches (U = 3 runs, L = 2 runs).
 
 APPLIANCES - Find each one:
 1. RANGE HOOD - what style? color? material?
@@ -697,6 +691,32 @@ Sample EXACT colors from pixels. Return ONLY valid JSON.`,
         try {
           const parsed = JSON.parse(content);
           analysis = parsed as SceneAnalysis;
+
+          // Sync cabinet runs to the chosen layout (trust visual: U vs L)
+          if (analysis.cabinets?.runs && analysis.room?.layout) {
+            const layout = analysis.room.layout;
+            const runs = analysis.cabinets.runs;
+            const walls = runs.map((r: { wall: string }) => r.wall);
+            if (layout === 'U-shaped' && walls.length < 3) {
+              const need = ['back', 'left', 'right'].filter(w => !walls.includes(w));
+              const template = runs[0];
+              need.forEach(w => {
+                runs.push({
+                  wall: w as 'back' | 'left' | 'right',
+                  startX: template?.startX ?? 0,
+                  lengthFeet: template?.lengthFeet ?? 4,
+                  hasUpperCabinets: template?.hasUpperCabinets ?? true,
+                  baseCabinetCount: template?.baseCabinetCount ?? 2,
+                  upperCabinetCount: template?.upperCabinetCount ?? 2,
+                });
+              });
+              console.log('[Scene Analysis] Added runs to match U-shaped:', need);
+            } else if (layout === 'L-shaped' && walls.length > 2) {
+              analysis.cabinets.runs = runs.slice(0, 2);
+              console.log('[Scene Analysis] Trimmed runs to match L-shaped');
+            }
+          }
+
           console.log('[Scene Analysis] Complete:', analysis.description);
           console.log('[Scene Analysis] Layout:', analysis.room.layout);
           console.log('[Scene Analysis] Cabinet Walls:', analysis.cabinets.runs?.map(r => r.wall).join(', ') || 'none');

@@ -425,11 +425,12 @@ function RealisticCabinet({
   isDrawer?: boolean;
 }) {
   const pullLength = isPremiumHardware ? 0.15 : 0.1;
-  const pullRadius = 0.01;
-  const doorGap = 0.006;
-  const frameWidth = 0.05; // Shaker frame width
-  const panelRecess = 0.008;
-  const doorThickness = 0.02;
+  const pullRadius = 0.008;
+  const doorGap = 0.003; // Tighter gap for seamless look
+  const frameWidth = 0.048; // Shaker frame width
+  const panelRecess = 0.006;
+  const doorThickness = 0.022;
+  const panelThickness = 0.018;
   
   const drawerCount = isDrawer ? Math.min(4, Math.max(2, Math.floor(height / 0.5))) : 1;
   const drawerH = (height - (drawerCount + 1) * doorGap) / drawerCount;
@@ -437,60 +438,97 @@ function RealisticCabinet({
   // Darker shade for depth/shadow
   const shadowColor = useMemo(() => {
     const c = new THREE.Color(material.color);
-    c.multiplyScalar(0.88);
+    c.multiplyScalar(0.82);
+    return '#' + c.getHexString();
+  }, [material.color]);
+  
+  // Interior color (darker)
+  const interiorColor = useMemo(() => {
+    const c = new THREE.Color(material.color);
+    c.multiplyScalar(0.7);
     return '#' + c.getHexString();
   }, [material.color]);
   
   // Lighter for highlights
   const highlightColor = useMemo(() => {
     const c = new THREE.Color(material.color);
-    c.multiplyScalar(1.05);
+    c.multiplyScalar(1.06);
+    return '#' + c.getHexString();
+  }, [material.color]);
+  
+  // Edge color for definition
+  const edgeColor = useMemo(() => {
+    const c = new THREE.Color(material.color);
+    c.multiplyScalar(0.92);
     return '#' + c.getHexString();
   }, [material.color]);
   
   const isWide = width > 0.65;
   
-  // Render shaker door panel
+  // Render shaker door panel with beveled edges
   const renderDoorPanel = (doorW: number, doorH: number, xOff: number, yOff: number) => (
     <group position={[xOff, yOff, depth / 2]}>
       {/* Door base */}
       <mesh position={[0, 0, doorThickness / 2]} castShadow>
-        <boxGeometry args={[doorW - doorGap, doorH - doorGap, doorThickness]} />
+        <boxGeometry args={[doorW - doorGap * 2, doorH - doorGap * 2, doorThickness]} />
         <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
       </mesh>
       
-      {/* Shaker frame - raised border */}
+      {/* Shaker frame - raised border with beveled appearance */}
       {/* Top rail */}
-      <mesh position={[0, (doorH - doorGap) / 2 - frameWidth / 2, doorThickness + 0.002]} castShadow>
-        <boxGeometry args={[doorW - doorGap - 0.004, frameWidth, 0.004]} />
-        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.05} metalness={material.metalness} />
+      <mesh position={[0, (doorH - doorGap * 2) / 2 - frameWidth / 2, doorThickness + 0.003]} castShadow>
+        <boxGeometry args={[doorW - doorGap * 2 - 0.006, frameWidth, 0.006]} />
+        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.06} metalness={material.metalness + 0.01} />
       </mesh>
+      {/* Top rail inner bevel */}
+      <mesh position={[0, (doorH - doorGap * 2) / 2 - frameWidth + 0.004, doorThickness + 0.001]}>
+        <boxGeometry args={[doorW - doorGap * 2 - frameWidth * 2, 0.008, 0.002]} />
+        <meshStandardMaterial color={edgeColor} roughness={material.roughness} />
+      </mesh>
+      
       {/* Bottom rail */}
-      <mesh position={[0, -(doorH - doorGap) / 2 + frameWidth / 2, doorThickness + 0.002]} castShadow>
-        <boxGeometry args={[doorW - doorGap - 0.004, frameWidth, 0.004]} />
-        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.05} metalness={material.metalness} />
+      <mesh position={[0, -(doorH - doorGap * 2) / 2 + frameWidth / 2, doorThickness + 0.003]} castShadow>
+        <boxGeometry args={[doorW - doorGap * 2 - 0.006, frameWidth, 0.006]} />
+        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.06} metalness={material.metalness + 0.01} />
       </mesh>
+      {/* Bottom rail inner bevel */}
+      <mesh position={[0, -(doorH - doorGap * 2) / 2 + frameWidth - 0.004, doorThickness + 0.001]}>
+        <boxGeometry args={[doorW - doorGap * 2 - frameWidth * 2, 0.008, 0.002]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.06} />
+      </mesh>
+      
       {/* Left stile */}
-      <mesh position={[-(doorW - doorGap) / 2 + frameWidth / 2, 0, doorThickness + 0.002]} castShadow>
-        <boxGeometry args={[frameWidth, doorH - doorGap - frameWidth * 2, 0.004]} />
-        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.05} metalness={material.metalness} />
+      <mesh position={[-(doorW - doorGap * 2) / 2 + frameWidth / 2, 0, doorThickness + 0.003]} castShadow>
+        <boxGeometry args={[frameWidth, doorH - doorGap * 2 - frameWidth * 2, 0.006]} />
+        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.06} metalness={material.metalness + 0.01} />
       </mesh>
+      
       {/* Right stile */}
-      <mesh position={[(doorW - doorGap) / 2 - frameWidth / 2, 0, doorThickness + 0.002]} castShadow>
-        <boxGeometry args={[frameWidth, doorH - doorGap - frameWidth * 2, 0.004]} />
-        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.05} metalness={material.metalness} />
+      <mesh position={[(doorW - doorGap * 2) / 2 - frameWidth / 2, 0, doorThickness + 0.003]} castShadow>
+        <boxGeometry args={[frameWidth, doorH - doorGap * 2 - frameWidth * 2, 0.006]} />
+        <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.06} metalness={material.metalness + 0.01} />
       </mesh>
       
       {/* Recessed center panel */}
       <mesh position={[0, 0, doorThickness - panelRecess]}>
-        <boxGeometry args={[doorW - doorGap - frameWidth * 2 - 0.01, doorH - doorGap - frameWidth * 2 - 0.01, panelRecess]} />
-        <meshStandardMaterial color={shadowColor} roughness={material.roughness + 0.08} metalness={material.metalness} />
+        <boxGeometry args={[doorW - doorGap * 2 - frameWidth * 2 - 0.012, doorH - doorGap * 2 - frameWidth * 2 - 0.012, panelRecess + 0.002]} />
+        <meshStandardMaterial color={shadowColor} roughness={material.roughness + 0.06} metalness={material.metalness} />
       </mesh>
       
-      {/* Shadow line around recessed panel */}
-      <mesh position={[0, 0, doorThickness - 0.001]}>
-        <boxGeometry args={[doorW - doorGap - frameWidth * 2 + 0.005, doorH - doorGap - frameWidth * 2 + 0.005, 0.002]} />
+      {/* Inner shadow - around recessed panel */}
+      <mesh position={[0, -(doorH - doorGap * 2 - frameWidth * 2) / 2, doorThickness - 0.002]}>
+        <boxGeometry args={[doorW - doorGap * 2 - frameWidth * 2 - 0.008, 0.006, 0.003]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.08} />
+      </mesh>
+      <mesh position={[(doorW - doorGap * 2 - frameWidth * 2) / 2, 0, doorThickness - 0.002]}>
+        <boxGeometry args={[0.006, doorH - doorGap * 2 - frameWidth * 2 - 0.008, 0.003]} />
         <meshStandardMaterial color="#000000" transparent opacity={0.06} />
+      </mesh>
+      
+      {/* Outer door edge highlight (subtle) */}
+      <mesh position={[0, (doorH - doorGap * 2) / 2, doorThickness / 2]}>
+        <boxGeometry args={[doorW - doorGap * 2, 0.002, doorThickness]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.04} />
       </mesh>
     </group>
   );
@@ -554,29 +592,45 @@ function RealisticCabinet({
   
   return (
     <group position={position}>
-      {/* Cabinet box (dark interior) */}
+      {/* Cabinet interior box */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={shadowColor} roughness={0.75} metalness={0} />
+        <boxGeometry args={[width - 0.004, height - 0.004, depth - 0.004]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.85} metalness={0} />
       </mesh>
       
-      {/* Side panels */}
-      <mesh position={[-width / 2 + 0.008, 0, 0]} castShadow>
-        <boxGeometry args={[0.016, height - 0.01, depth - 0.01]} />
+      {/* Side panels - full matching color */}
+      <mesh position={[-width / 2 + panelThickness / 2, 0, 0]} castShadow>
+        <boxGeometry args={[panelThickness, height, depth]} />
         <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
       </mesh>
-      <mesh position={[width / 2 - 0.008, 0, 0]} castShadow>
-        <boxGeometry args={[0.016, height - 0.01, depth - 0.01]} />
+      <mesh position={[width / 2 - panelThickness / 2, 0, 0]} castShadow>
+        <boxGeometry args={[panelThickness, height, depth]} />
         <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
       </mesh>
       
-      {/* Top panel (for base cabinets) */}
-      {!isUpper && (
-        <mesh position={[0, height / 2 - 0.008, 0]} castShadow>
-          <boxGeometry args={[width - 0.02, 0.016, depth - 0.01]} />
-          <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
-        </mesh>
-      )}
+      {/* Top panel */}
+      <mesh position={[0, height / 2 - panelThickness / 2, 0]} castShadow>
+        <boxGeometry args={[width, panelThickness, depth]} />
+        <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
+      </mesh>
+      
+      {/* Bottom panel */}
+      <mesh position={[0, -height / 2 + panelThickness / 2, 0]} castShadow>
+        <boxGeometry args={[width, panelThickness, depth]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.7} />
+      </mesh>
+      
+      {/* Back panel */}
+      <mesh position={[0, 0, -depth / 2 + 0.006]}>
+        <boxGeometry args={[width - panelThickness * 2, height - panelThickness * 2, 0.012]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.9} />
+      </mesh>
+      
+      {/* Interior shelf */}
+      <mesh position={[0, 0, -0.05]}>
+        <boxGeometry args={[width - panelThickness * 2 - 0.02, 0.018, depth - 0.12]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.7} />
+      </mesh>
       
       {/* Door/Drawer fronts */}
       {isDrawer ? (
@@ -684,37 +738,88 @@ function RealisticCountertop({
   depth,
   material,
   hasVeins = false,
+  edgeProfile = 'eased',
 }: {
   position: [number, number, number];
   width: number;
   depth: number;
   material: { color: string; roughness: number; metalness: number };
   hasVeins?: boolean;
+  edgeProfile?: 'square' | 'eased' | 'bullnose' | 'ogee';
 }) {
+  const thickness = 0.05;
+  const edgeRadius = 0.008;
+  
+  // Generate vein pattern for marble effect
+  const veinPattern = useMemo(() => {
+    if (!hasVeins) return [];
+    const veins = [];
+    const veinCount = Math.floor(width * 2);
+    for (let i = 0; i < veinCount; i++) {
+      veins.push({
+        x: (Math.random() - 0.5) * width * 0.9,
+        z: (Math.random() - 0.5) * depth * 0.8,
+        rotation: Math.random() * Math.PI * 0.3 - Math.PI * 0.15,
+        length: 0.15 + Math.random() * 0.3,
+        opacity: 0.08 + Math.random() * 0.1,
+      });
+    }
+    return veins;
+  }, [hasVeins, width, depth]);
+  
   return (
     <group position={position}>
+      {/* Main countertop slab */}
       <mesh castShadow receiveShadow>
-        <boxGeometry args={[width, 0.05, depth]} />
+        <boxGeometry args={[width, thickness, depth]} />
         <meshStandardMaterial 
           color={material.color} 
           roughness={material.roughness} 
           metalness={material.metalness}
         />
       </mesh>
-      {hasVeins && (
-        <mesh position={[0, 0.026, 0]}>
-          <planeGeometry args={[width * 0.9, depth * 0.9]} />
-          <meshStandardMaterial 
-            color="#D0D0D0" 
-            roughness={0.1} 
-            transparent 
-            opacity={0.15}
-          />
+      
+      {/* Eased edge profile - front */}
+      {edgeProfile !== 'square' && (
+        <mesh position={[0, thickness / 2 - edgeRadius / 2, depth / 2]} rotation={[0, 0, Math.PI / 2]}>
+          <cylinderGeometry args={[edgeRadius, edgeRadius, width, 8, 1, false, 0, Math.PI / 2]} />
+          <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
         </mesh>
       )}
-      <mesh position={[0, -0.03, depth / 2 - 0.02]}>
-        <boxGeometry args={[width, 0.02, 0.04]} />
+      
+      {/* Front drip edge - prevents water from running under */}
+      <mesh position={[0, -thickness / 2 + 0.008, depth / 2 - 0.01]}>
+        <boxGeometry args={[width, 0.015, 0.02]} />
         <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={material.metalness} />
+      </mesh>
+      
+      {/* Subtle highlight line at top edge */}
+      <mesh position={[0, thickness / 2 + 0.001, depth / 2 - 0.015]}>
+        <boxGeometry args={[width - 0.02, 0.002, 0.03]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.08} />
+      </mesh>
+      
+      {/* Marble veins pattern */}
+      {veinPattern.map((vein, i) => (
+        <mesh 
+          key={i} 
+          position={[vein.x, thickness / 2 + 0.002, vein.z]} 
+          rotation={[-Math.PI / 2, 0, vein.rotation]}
+        >
+          <planeGeometry args={[vein.length, 0.008]} />
+          <meshStandardMaterial 
+            color="#808080" 
+            roughness={0.1} 
+            transparent 
+            opacity={vein.opacity}
+          />
+        </mesh>
+      ))}
+      
+      {/* Shadow line under countertop overhang */}
+      <mesh position={[0, -thickness / 2 - 0.005, depth / 2]}>
+        <boxGeometry args={[width, 0.01, 0.05]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.15} />
       </mesh>
     </group>
   );
@@ -737,28 +842,107 @@ function RealisticBacksplash({
   material: { color: string; roughness: number };
   type?: 'subway' | 'grid' | 'slab';
 }) {
+  const tileWidth = type === 'subway' ? 0.3 : type === 'grid' ? 0.15 : width;
+  const tileHeight = type === 'subway' ? 0.1 : type === 'grid' ? 0.15 : height;
+  const groutWidth = 0.006;
+  const tileThickness = 0.012;
+  
+  // Grout color - slightly darker than tile
+  const groutColor = useMemo(() => {
+    const c = new THREE.Color(material.color);
+    c.multiplyScalar(0.7);
+    return '#' + c.getHexString();
+  }, [material.color]);
+  
+  // Highlight color for tile edges
+  const highlightColor = useMemo(() => {
+    const c = new THREE.Color(material.color);
+    c.multiplyScalar(1.05);
+    return '#' + c.getHexString();
+  }, [material.color]);
+  
+  const rowCount = Math.floor(height / (tileHeight + groutWidth));
+  const colCount = Math.floor(width / (tileWidth + groutWidth));
+  
   return (
     <group position={position}>
+      {/* Backing/grout layer */}
       <mesh receiveShadow>
-        <boxGeometry args={[width, height, 0.02]} />
-        <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={0.05} />
+        <boxGeometry args={[width, height, 0.01]} />
+        <meshStandardMaterial color={groutColor} roughness={0.8} metalness={0} />
       </mesh>
-      {type === 'subway' && (
-        <group position={[0, 0, 0.011]}>
-          {Array.from({ length: Math.floor(height / 0.15) }).map((_, row) =>
-            Array.from({ length: Math.floor(width / 0.3) }).map((_, col) => (
-              <mesh
-                key={`${row}-${col}`}
-                position={[
-                  -width / 2 + 0.15 + col * 0.3 + (row % 2) * 0.15,
-                  -height / 2 + 0.075 + row * 0.15,
-                  0,
-                ]}
-              >
-                <planeGeometry args={[0.28, 0.13]} />
-                <meshStandardMaterial color={material.color} roughness={material.roughness - 0.05} />
-              </mesh>
-            ))
+      
+      {/* Top metal trim edge */}
+      <mesh position={[0, height / 2 + 0.01, 0.006]} castShadow>
+        <boxGeometry args={[width + 0.02, 0.015, 0.012]} />
+        <meshStandardMaterial color="#C8C8C8" roughness={0.25} metalness={0.85} />
+      </mesh>
+      
+      {type === 'slab' ? (
+        // Full slab backsplash (marble/quartz)
+        <group position={[0, 0, 0.006]}>
+          <mesh receiveShadow castShadow>
+            <boxGeometry args={[width - 0.02, height - 0.02, tileThickness]} />
+            <meshStandardMaterial color={material.color} roughness={material.roughness} metalness={0.08} />
+          </mesh>
+          {/* Subtle veining for marble effect */}
+          {Array.from({ length: 5 }).map((_, i) => (
+            <mesh 
+              key={i} 
+              position={[
+                (Math.random() - 0.5) * width * 0.8, 
+                (Math.random() - 0.5) * height * 0.7, 
+                tileThickness / 2 + 0.002
+              ]}
+              rotation={[0, 0, (Math.random() - 0.5) * 0.3]}
+            >
+              <planeGeometry args={[0.15 + Math.random() * 0.2, 0.008]} />
+              <meshStandardMaterial color="#A0A0A0" transparent opacity={0.1} />
+            </mesh>
+          ))}
+        </group>
+      ) : (
+        // Tile backsplash (subway or grid)
+        <group position={[0, 0, 0.006]}>
+          {Array.from({ length: rowCount }).map((_, row) =>
+            Array.from({ length: colCount }).map((_, col) => {
+              const offset = type === 'subway' && row % 2 === 1 ? tileWidth / 2 : 0;
+              const xPos = -width / 2 + tileWidth / 2 + groutWidth + col * (tileWidth + groutWidth) + offset;
+              const yPos = -height / 2 + tileHeight / 2 + groutWidth + row * (tileHeight + groutWidth);
+              
+              // Skip tiles that would be outside bounds
+              if (xPos > width / 2 - tileWidth / 4) return null;
+              if (xPos < -width / 2 + tileWidth / 4) return null;
+              
+              return (
+                <group key={`${row}-${col}`} position={[xPos, yPos, 0]}>
+                  {/* Individual tile */}
+                  <mesh receiveShadow castShadow>
+                    <boxGeometry args={[tileWidth - groutWidth, tileHeight - groutWidth, tileThickness]} />
+                    <meshStandardMaterial 
+                      color={material.color} 
+                      roughness={material.roughness - 0.03} 
+                      metalness={0.03} 
+                    />
+                  </mesh>
+                  {/* Top edge highlight */}
+                  <mesh position={[0, (tileHeight - groutWidth) / 2 - 0.002, tileThickness / 2]}>
+                    <boxGeometry args={[tileWidth - groutWidth - 0.01, 0.003, 0.002]} />
+                    <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.1} />
+                  </mesh>
+                  {/* Left edge highlight */}
+                  <mesh position={[-(tileWidth - groutWidth) / 2 + 0.002, 0, tileThickness / 2]}>
+                    <boxGeometry args={[0.003, tileHeight - groutWidth - 0.01, 0.002]} />
+                    <meshStandardMaterial color={highlightColor} roughness={material.roughness - 0.1} />
+                  </mesh>
+                  {/* Bottom shadow */}
+                  <mesh position={[0, -(tileHeight - groutWidth) / 2, tileThickness / 2 + 0.001]}>
+                    <boxGeometry args={[tileWidth - groutWidth, 0.003, 0.001]} />
+                    <meshStandardMaterial color="#000000" transparent opacity={0.06} />
+                  </mesh>
+                </group>
+              );
+            })
           )}
         </group>
       )}
@@ -774,28 +958,98 @@ function RealisticWindow({
   position,
   width,
   height,
+  style = 'casement',
 }: {
   position: [number, number, number];
   width: number;
   height: number;
+  style?: 'casement' | 'picture' | 'double-hung';
 }) {
+  const frameThickness = 0.08;
+  const sillDepth = 0.15;
+  
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={[width + 0.15, height + 0.15, 0.1]} />
-        <meshStandardMaterial color="#FAFAFA" roughness={0.5} />
+      {/* Window opening recess - creates depth */}
+      <mesh position={[0, 0, -0.1]}>
+        <boxGeometry args={[width + 0.3, height + 0.2, 0.2]} />
+        <meshStandardMaterial color="#F5F5F5" roughness={0.6} />
       </mesh>
+      
+      {/* Outer frame - wood or vinyl */}
+      <mesh castShadow>
+        <boxGeometry args={[width + 0.2, height + 0.2, 0.12]} />
+        <meshStandardMaterial color="#FAFAFA" roughness={0.45} />
+      </mesh>
+      
+      {/* Inner frame cutout */}
       <mesh position={[0, 0, 0.02]}>
-        <boxGeometry args={[width, height, 0.02]} />
-        <meshStandardMaterial color="#87CEEB" roughness={0.02} metalness={0.1} transparent opacity={0.4} />
+        <boxGeometry args={[width - 0.04, height - 0.04, 0.1]} />
+        <meshStandardMaterial color="#404040" roughness={0.8} />
       </mesh>
-      <mesh position={[0, 0, 0.03]}>
-        <boxGeometry args={[0.03, height, 0.02]} />
-        <meshStandardMaterial color="#FAFAFA" roughness={0.5} />
+      
+      {/* Glass pane - with sky reflection */}
+      <mesh position={[0, 0, 0.04]}>
+        <boxGeometry args={[width - 0.06, height - 0.06, 0.015]} />
+        <meshStandardMaterial 
+          color="#B0D4E8" 
+          roughness={0.01} 
+          metalness={0.12} 
+          transparent 
+          opacity={0.35} 
+        />
       </mesh>
-      <mesh position={[0, 0, 0.03]}>
-        <boxGeometry args={[width, 0.03, 0.02]} />
-        <meshStandardMaterial color="#FAFAFA" roughness={0.5} />
+      
+      {/* Glass reflection highlight - diagonal */}
+      <mesh position={[-width * 0.15, height * 0.15, 0.052]} rotation={[0, 0, 0.3]}>
+        <boxGeometry args={[width * 0.4, height * 0.5, 0.002]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.08} />
+      </mesh>
+      
+      {/* Center vertical mullion */}
+      <mesh position={[0, 0, 0.06]} castShadow>
+        <boxGeometry args={[frameThickness * 0.6, height - 0.08, frameThickness * 0.5]} />
+        <meshStandardMaterial color="#F8F8F8" roughness={0.4} />
+      </mesh>
+      
+      {/* Center horizontal mullion */}
+      <mesh position={[0, 0, 0.06]} castShadow>
+        <boxGeometry args={[width - 0.08, frameThickness * 0.6, frameThickness * 0.5]} />
+        <meshStandardMaterial color="#F8F8F8" roughness={0.4} />
+      </mesh>
+      
+      {/* Window sill - extends forward */}
+      <mesh position={[0, -height / 2 - 0.04, sillDepth / 2 + 0.04]} castShadow>
+        <boxGeometry args={[width + 0.35, 0.06, sillDepth]} />
+        <meshStandardMaterial color="#FFFFFF" roughness={0.4} />
+      </mesh>
+      
+      {/* Sill front edge - rounded appearance */}
+      <mesh position={[0, -height / 2 - 0.05, sillDepth + 0.04]}>
+        <boxGeometry args={[width + 0.35, 0.04, 0.02]} />
+        <meshStandardMaterial color="#F5F5F5" roughness={0.35} />
+      </mesh>
+      
+      {/* Window header/top trim */}
+      <mesh position={[0, height / 2 + 0.12, 0.04]} castShadow>
+        <boxGeometry args={[width + 0.35, 0.08, 0.1]} />
+        <meshStandardMaterial color="#FAFAFA" roughness={0.45} />
+      </mesh>
+      
+      {/* Side casing trim */}
+      <mesh position={[-width / 2 - 0.12, 0, 0.04]} castShadow>
+        <boxGeometry args={[0.08, height + 0.1, 0.08]} />
+        <meshStandardMaterial color="#FAFAFA" roughness={0.45} />
+      </mesh>
+      <mesh position={[width / 2 + 0.12, 0, 0.04]} castShadow>
+        <boxGeometry args={[0.08, height + 0.1, 0.08]} />
+        <meshStandardMaterial color="#FAFAFA" roughness={0.45} />
+      </mesh>
+      
+      {/* Outside view hint - blurred greenery */}
+      <mesh position={[0, 0, -0.15]}>
+        <boxGeometry args={[width - 0.1, height - 0.1, 0.02]} />
+        <meshStandardMaterial color="#4A7C4A" roughness={0.9} />
       </mesh>
     </group>
   );
@@ -808,31 +1062,111 @@ function RealisticWindow({
 function RealisticSink({
   position,
   faucetMat,
+  sinkStyle = 'undermount',
 }: {
   position: [number, number, number];
   faucetMat: { color: string; roughness: number; metalness: number };
+  sinkStyle?: 'undermount' | 'farmhouse' | 'drop-in';
 }) {
+  const isFarmhouse = sinkStyle === 'farmhouse';
+  
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={[2.2, 0.3, 1.4]} />
-        <meshStandardMaterial color="#D0D0D0" roughness={0.15} metalness={0.9} />
+      {/* Sink basin outer rim */}
+      <mesh castShadow>
+        <boxGeometry args={[2.3, 0.32, 1.5]} />
+        <meshStandardMaterial color="#E0E0E0" roughness={0.12} metalness={0.92} />
       </mesh>
-      <mesh position={[0, 0.05, 0]}>
-        <boxGeometry args={[2, 0.25, 1.2]} />
-        <meshStandardMaterial color="#404040" roughness={0.2} />
+      
+      {/* Sink basin interior - dark for depth */}
+      <mesh position={[0, 0.02, 0]}>
+        <boxGeometry args={[2.1, 0.28, 1.3]} />
+        <meshStandardMaterial color="#303030" roughness={0.2} metalness={0.1} />
       </mesh>
-      <group position={[0, 0.4, -0.5]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.03, 0.03, 0.5, 16]} />
+      
+      {/* Basin bottom - stainless with drain */}
+      <mesh position={[0, -0.12, 0]}>
+        <boxGeometry args={[2.05, 0.02, 1.25]} />
+        <meshStandardMaterial color="#909090" roughness={0.3} metalness={0.85} />
+      </mesh>
+      
+      {/* Drain */}
+      <mesh position={[0, -0.1, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.06, 0.06, 0.03, 16]} />
+        <meshStandardMaterial color="#404040" roughness={0.4} metalness={0.8} />
+      </mesh>
+      <mesh position={[0, -0.09, 0.1]} rotation={[-Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.04, 0.04, 0.015, 16]} />
+        <meshStandardMaterial color="#1A1A1A" roughness={0.3} metalness={0.6} />
+      </mesh>
+      
+      {/* Sink rim highlight */}
+      <mesh position={[0, 0.165, 0]}>
+        <boxGeometry args={[2.32, 0.006, 1.52]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.15} />
+      </mesh>
+      
+      {/* Farmhouse apron front */}
+      {isFarmhouse && (
+        <mesh position={[0, -0.05, 0.78]} castShadow>
+          <boxGeometry args={[2.3, 0.5, 0.08]} />
+          <meshStandardMaterial color="#F5F5F5" roughness={0.3} metalness={0.1} />
+        </mesh>
+      )}
+      
+      {/* Modern pull-down faucet */}
+      <group position={[0, 0.35, -0.55]}>
+        {/* Faucet base plate */}
+        <mesh position={[0, 0.02, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.06, 0.06, 0.04, 24]} />
           <meshStandardMaterial {...faucetMat} />
         </mesh>
-        <mesh position={[0, 0.25, 0.15]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.025, 0.025, 0.3, 16]} />
+        
+        {/* Faucet neck - curved high-arc */}
+        <mesh position={[0, 0.2, 0]} castShadow>
+          <cylinderGeometry args={[0.022, 0.025, 0.4, 16]} />
           <meshStandardMaterial {...faucetMat} />
         </mesh>
-        <mesh position={[0, 0.25, 0.3]}>
-          <cylinderGeometry args={[0.02, 0.015, 0.08, 16]} />
+        
+        {/* Curved gooseneck */}
+        <mesh position={[0, 0.42, 0.08]} rotation={[0.3, 0, 0]}>
+          <cylinderGeometry args={[0.02, 0.022, 0.18, 16]} />
+          <meshStandardMaterial {...faucetMat} />
+        </mesh>
+        
+        {/* Spout */}
+        <mesh position={[0, 0.45, 0.22]} rotation={[Math.PI / 2.8, 0, 0]}>
+          <cylinderGeometry args={[0.018, 0.02, 0.2, 16]} />
+          <meshStandardMaterial {...faucetMat} />
+        </mesh>
+        
+        {/* Pull-down sprayer head */}
+        <mesh position={[0, 0.38, 0.35]} rotation={[Math.PI / 2.2, 0, 0]}>
+          <cylinderGeometry args={[0.025, 0.02, 0.08, 16]} />
+          <meshStandardMaterial {...faucetMat} />
+        </mesh>
+        
+        {/* Sprayer nozzle */}
+        <mesh position={[0, 0.33, 0.38]}>
+          <cylinderGeometry args={[0.012, 0.015, 0.04, 12]} />
+          <meshStandardMaterial color="#505050" roughness={0.3} metalness={0.7} />
+        </mesh>
+        
+        {/* Handle - single lever */}
+        <mesh position={[0, 0.28, -0.04]} rotation={[0, 0, Math.PI / 6]} castShadow>
+          <boxGeometry args={[0.12, 0.04, 0.025]} />
+          <meshStandardMaterial {...faucetMat} />
+        </mesh>
+      </group>
+      
+      {/* Soap dispenser */}
+      <group position={[0.9, 0.15, -0.5]}>
+        <mesh rotation={[-Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.15, 12]} />
+          <meshStandardMaterial {...faucetMat} />
+        </mesh>
+        <mesh position={[0, 0.1, 0]}>
+          <cylinderGeometry args={[0.02, 0.02, 0.05, 12]} />
           <meshStandardMaterial {...faucetMat} />
         </mesh>
       </group>
@@ -1068,10 +1402,20 @@ function BuiltInOven({ position, isDouble = false }: { position: [number, number
   
   return (
     <group position={position}>
-      {/* Cabinet housing */}
+      {/* Cabinet housing - brushed stainless */}
       <mesh castShadow>
         <boxGeometry args={[2.4, ovenHeight, 2]} />
-        <meshStandardMaterial color="#2D2D2D" roughness={0.4} metalness={0.5} />
+        <meshStandardMaterial color="#3A3A3A" roughness={0.35} metalness={0.6} />
+      </mesh>
+      
+      {/* Side trim panels */}
+      <mesh position={[-1.15, 0, 0.5]} castShadow>
+        <boxGeometry args={[0.08, ovenHeight - 0.1, 1.2]} />
+        <meshStandardMaterial color="#B8B8B8" roughness={0.25} metalness={0.9} />
+      </mesh>
+      <mesh position={[1.15, 0, 0.5]} castShadow>
+        <boxGeometry args={[0.08, ovenHeight - 0.1, 1.2]} />
+        <meshStandardMaterial color="#B8B8B8" roughness={0.25} metalness={0.9} />
       </mesh>
       
       {/* Render oven(s) */}
@@ -1079,33 +1423,69 @@ function BuiltInOven({ position, isDouble = false }: { position: [number, number
         const yOffset = isDouble ? (i === 0 ? 1.0 : -1.0) : 0;
         return (
           <group key={i} position={[0, yOffset, 0]}>
-            {/* Oven door */}
-            <mesh position={[0, 0, 1.01]} castShadow>
-              <boxGeometry args={[2.1, 1.6, 0.08]} />
-              <meshStandardMaterial color="#1A1A1A" roughness={0.2} metalness={0.6} />
+            {/* Oven door frame - stainless */}
+            <mesh position={[0, 0, 1.005]} castShadow>
+              <boxGeometry args={[2.15, 1.65, 0.06]} />
+              <meshStandardMaterial color="#C8C8C8" roughness={0.22} metalness={0.92} />
             </mesh>
-            {/* Glass window */}
-            <mesh position={[0, 0.1, 1.06]}>
-              <boxGeometry args={[1.7, 1.1, 0.02]} />
-              <meshStandardMaterial color="#0A0A0A" roughness={0.02} metalness={0.1} transparent opacity={0.85} />
+            {/* Oven door - black glass */}
+            <mesh position={[0, 0, 1.04]} castShadow>
+              <boxGeometry args={[2.0, 1.5, 0.05]} />
+              <meshStandardMaterial color="#1A1A1A" roughness={0.12} metalness={0.5} />
             </mesh>
-            {/* Handle */}
-            <mesh position={[0, -0.7, 1.12]} rotation={[0, 0, Math.PI / 2]}>
-              <cylinderGeometry args={[0.025, 0.025, 1.4, 12]} />
-              <meshStandardMaterial color="#808080" roughness={0.3} metalness={0.9} />
+            {/* Inner glass window - triple pane effect */}
+            <mesh position={[0, 0.08, 1.065]}>
+              <boxGeometry args={[1.65, 1.05, 0.015]} />
+              <meshStandardMaterial color="#0D0D0D" roughness={0.02} metalness={0.08} transparent opacity={0.9} />
             </mesh>
-            {/* Control panel */}
-            <mesh position={[0, 0.9, 1.04]}>
-              <boxGeometry args={[2.0, 0.25, 0.04]} />
-              <meshStandardMaterial color="#2D2D2D" roughness={0.3} metalness={0.5} />
+            {/* Glass reflection highlight */}
+            <mesh position={[-0.3, 0.25, 1.075]}>
+              <boxGeometry args={[0.6, 0.4, 0.002]} />
+              <meshStandardMaterial color="#FFFFFF" transparent opacity={0.06} />
             </mesh>
-            {/* Control knobs */}
-            {[-0.6, -0.2, 0.2, 0.6].map((x, j) => (
-              <mesh key={j} position={[x, 0.9, 1.08]}>
-                <cylinderGeometry args={[0.04, 0.04, 0.04, 12]} />
-                <meshStandardMaterial color="#404040" roughness={0.4} metalness={0.7} />
+            {/* Interior glow (subtle orange when on) */}
+            <mesh position={[0, 0, 0.95]}>
+              <boxGeometry args={[1.6, 1.0, 0.02]} />
+              <meshStandardMaterial color="#1A0800" emissive="#2A1000" emissiveIntensity={0.15} />
+            </mesh>
+            {/* Handle - premium tube style */}
+            <mesh position={[0, -0.68, 1.12]} rotation={[0, 0, Math.PI / 2]}>
+              <cylinderGeometry args={[0.022, 0.022, 1.35, 16]} />
+              <meshStandardMaterial color="#D0D0D0" roughness={0.2} metalness={0.95} />
+            </mesh>
+            {/* Handle mounts */}
+            <mesh position={[-0.6, -0.68, 1.08]}>
+              <boxGeometry args={[0.04, 0.05, 0.08]} />
+              <meshStandardMaterial color="#A0A0A0" roughness={0.25} metalness={0.9} />
+            </mesh>
+            <mesh position={[0.6, -0.68, 1.08]}>
+              <boxGeometry args={[0.04, 0.05, 0.08]} />
+              <meshStandardMaterial color="#A0A0A0" roughness={0.25} metalness={0.9} />
+            </mesh>
+            {/* Control panel - digital touch */}
+            <mesh position={[0, 0.88, 1.035]}>
+              <boxGeometry args={[1.95, 0.22, 0.035]} />
+              <meshStandardMaterial color="#1D1D1D" roughness={0.15} metalness={0.4} />
+            </mesh>
+            {/* LED display */}
+            <mesh position={[-0.5, 0.88, 1.055]}>
+              <boxGeometry args={[0.4, 0.12, 0.005]} />
+              <meshStandardMaterial color="#001A00" emissive="#00FF00" emissiveIntensity={0.08} />
+            </mesh>
+            {/* Touch buttons */}
+            {[-0.1, 0.15, 0.4, 0.65].map((x, j) => (
+              <mesh key={j} position={[x, 0.88, 1.055]}>
+                <boxGeometry args={[0.08, 0.08, 0.003]} />
+                <meshStandardMaterial color="#2A2A2A" roughness={0.2} metalness={0.3} />
               </mesh>
             ))}
+            {/* Separator line between ovens */}
+            {isDouble && i === 0 && (
+              <mesh position={[0, -0.85, 1.05]}>
+                <boxGeometry args={[2.1, 0.02, 0.02]} />
+                <meshStandardMaterial color="#606060" roughness={0.3} metalness={0.8} />
+              </mesh>
+            )}
           </group>
         );
       })}
@@ -1113,20 +1493,90 @@ function BuiltInOven({ position, isDouble = false }: { position: [number, number
   );
 }
 
-function RangeHood({ position, width = 2.5 }: { position: [number, number, number]; width?: number }) {
+function RangeHood({ position, width = 2.5, style = 'chimney' }: { position: [number, number, number]; width?: number; style?: 'chimney' | 'undercabinet' | 'island' }) {
+  const isChimney = style === 'chimney' || style === 'island';
+  
   return (
     <group position={position}>
+      {/* Main hood body - brushed stainless */}
       <mesh castShadow>
-        <boxGeometry args={[width, 0.8, 1.8]} />
-        <meshStandardMaterial color="#C0C0C0" roughness={0.2} metalness={0.95} />
+        <boxGeometry args={[width, 0.85, 1.85]} />
+        <meshStandardMaterial color="#D0D0D0" roughness={0.18} metalness={0.95} />
       </mesh>
-      <mesh position={[0, -0.5, 0]}>
-        <boxGeometry args={[width * 0.95, 0.15, 1.7]} />
-        <meshStandardMaterial color="#A0A0A0" roughness={0.25} metalness={0.9} />
+      
+      {/* Front angled panel */}
+      <mesh position={[0, -0.2, 0.95]} rotation={[0.15, 0, 0]} castShadow>
+        <boxGeometry args={[width - 0.05, 0.5, 0.08]} />
+        <meshStandardMaterial color="#E0E0E0" roughness={0.15} metalness={0.96} />
       </mesh>
-      <mesh position={[0, 0.5, 0]}>
-        <boxGeometry args={[0.4, 0.8, 0.4]} />
-        <meshStandardMaterial color="#B0B0B0" roughness={0.2} metalness={0.9} />
+      
+      {/* Bottom baffle filters */}
+      <group position={[0, -0.48, 0]}>
+        {/* Filter frame */}
+        <mesh>
+          <boxGeometry args={[width * 0.92, 0.08, 1.7]} />
+          <meshStandardMaterial color="#B0B0B0" roughness={0.25} metalness={0.88} />
+        </mesh>
+        {/* Filter mesh pattern - multiple slats */}
+        {Array.from({ length: Math.floor(width * 4) }).map((_, i) => (
+          <mesh key={i} position={[-width * 0.42 + i * 0.22, 0.02, 0]}>
+            <boxGeometry args={[0.15, 0.04, 1.5]} />
+            <meshStandardMaterial color="#909090" roughness={0.3} metalness={0.85} />
+          </mesh>
+        ))}
+        {/* Cross slats */}
+        {Array.from({ length: 5 }).map((_, i) => (
+          <mesh key={i} position={[0, 0.02, -0.6 + i * 0.3]}>
+            <boxGeometry args={[width * 0.88, 0.02, 0.02]} />
+            <meshStandardMaterial color="#808080" roughness={0.35} metalness={0.8} />
+          </mesh>
+        ))}
+      </group>
+      
+      {/* LED strip */}
+      <mesh position={[0, -0.42, 0.85]}>
+        <boxGeometry args={[width * 0.8, 0.015, 0.03]} />
+        <meshStandardMaterial color="#FFF8E8" emissive="#FFF8E8" emissiveIntensity={0.2} />
+      </mesh>
+      
+      {/* Control panel */}
+      <mesh position={[0, -0.1, 0.94]}>
+        <boxGeometry args={[0.5, 0.08, 0.02]} />
+        <meshStandardMaterial color="#2A2A2A" roughness={0.2} metalness={0.6} />
+      </mesh>
+      {/* Touch buttons */}
+      {[-0.15, -0.05, 0.05, 0.15].map((x, i) => (
+        <mesh key={i} position={[x, -0.1, 0.952]}>
+          <cylinderGeometry args={[0.015, 0.015, 0.002, 12]} />
+          <meshStandardMaterial color="#404040" roughness={0.3} metalness={0.5} />
+        </mesh>
+      ))}
+      
+      {/* Chimney duct (for chimney/island styles) */}
+      {isChimney && (
+        <group position={[0, 0.85, 0]}>
+          {/* Lower chimney section */}
+          <mesh castShadow>
+            <boxGeometry args={[0.55, 1.2, 0.55]} />
+            <meshStandardMaterial color="#C8C8C8" roughness={0.2} metalness={0.92} />
+          </mesh>
+          {/* Upper chimney section (extends to ceiling) */}
+          <mesh position={[0, 0.9, 0]} castShadow>
+            <boxGeometry args={[0.45, 0.6, 0.45]} />
+            <meshStandardMaterial color="#D0D0D0" roughness={0.2} metalness={0.92} />
+          </mesh>
+          {/* Chimney cap */}
+          <mesh position={[0, 1.22, 0]}>
+            <boxGeometry args={[0.5, 0.04, 0.5]} />
+            <meshStandardMaterial color="#E0E0E0" roughness={0.15} metalness={0.95} />
+          </mesh>
+        </group>
+      )}
+      
+      {/* Edge highlights */}
+      <mesh position={[0, 0.42, 0]}>
+        <boxGeometry args={[width + 0.01, 0.008, 1.86]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.08} />
       </mesh>
     </group>
   );
@@ -1155,22 +1605,99 @@ function Refrigerator({ position, color = '#C0C0C0' }: { position: [number, numb
   );
 }
 
-function Cooktop({ position }: { position: [number, number, number] }) {
+function Cooktop({ position, burnerCount = 5 }: { position: [number, number, number]; burnerCount?: number }) {
+  // Premium induction cooktop with glass surface
+  const burnerPositions = burnerCount === 5 
+    ? [
+        { x: -0.65, z: -0.35, r: 0.18 }, // Left back - large
+        { x: 0.65, z: -0.35, r: 0.18 },  // Right back - large
+        { x: -0.65, z: 0.35, r: 0.14 },  // Left front - medium
+        { x: 0.65, z: 0.35, r: 0.14 },   // Right front - medium
+        { x: 0, z: 0, r: 0.22 },          // Center - extra large
+      ]
+    : [
+        { x: -0.55, z: -0.32, r: 0.17 },
+        { x: 0.55, z: -0.32, r: 0.17 },
+        { x: -0.55, z: 0.32, r: 0.14 },
+        { x: 0.55, z: 0.32, r: 0.14 },
+      ];
+  
   return (
     <group position={position}>
-      <mesh>
-        <boxGeometry args={[2.4, 0.03, 1.6]} />
-        <meshStandardMaterial color="#0A0A0A" roughness={0.05} metalness={0.1} />
+      {/* Glass cooktop surface */}
+      <mesh castShadow>
+        <boxGeometry args={[2.5, 0.025, 1.7]} />
+        <meshStandardMaterial color="#050505" roughness={0.02} metalness={0.15} />
       </mesh>
-      {[-0.6, 0.6].map((x, i) => (
-        <group key={i}>
-          <mesh position={[x, 0.02, -0.35]}>
-            <cylinderGeometry args={[0.2, 0.2, 0.01, 24]} />
-            <meshStandardMaterial color="#1A1A1A" roughness={0.3} />
+      
+      {/* Glass reflection highlights */}
+      <mesh position={[-0.4, 0.014, -0.3]} rotation={[-Math.PI / 2, 0, 0.2]}>
+        <planeGeometry args={[0.8, 0.4]} />
+        <meshStandardMaterial color="#FFFFFF" transparent opacity={0.04} />
+      </mesh>
+      
+      {/* Frame/bezel */}
+      <mesh position={[0, 0, 0]} castShadow>
+        <boxGeometry args={[2.55, 0.04, 1.75]} />
+        <meshStandardMaterial color="#3A3A3A" roughness={0.4} metalness={0.7} />
+      </mesh>
+      <mesh position={[0, 0.008, 0]}>
+        <boxGeometry args={[2.48, 0.02, 1.68]} />
+        <meshStandardMaterial color="#050505" roughness={0.02} metalness={0.15} />
+      </mesh>
+      
+      {/* Burner zones */}
+      {burnerPositions.map((burner, i) => (
+        <group key={i} position={[burner.x, 0.016, burner.z]}>
+          {/* Burner ring outline */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[burner.r, 0.008, 8, 32]} />
+            <meshStandardMaterial color="#303030" roughness={0.3} metalness={0.2} />
           </mesh>
-          <mesh position={[x, 0.02, 0.35]}>
-            <cylinderGeometry args={[0.15, 0.15, 0.01, 24]} />
-            <meshStandardMaterial color="#1A1A1A" roughness={0.3} />
+          {/* Inner ring */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[burner.r * 0.65, 0.005, 8, 32]} />
+            <meshStandardMaterial color="#282828" roughness={0.35} metalness={0.15} />
+          </mesh>
+          {/* Center indicator */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.02, 0.02, 0.002, 12]} />
+            <meshStandardMaterial color="#404040" roughness={0.4} />
+          </mesh>
+          {/* Power level indicators */}
+          {[0, Math.PI / 2, Math.PI, Math.PI * 1.5].map((angle, j) => (
+            <mesh 
+              key={j} 
+              position={[
+                Math.cos(angle) * (burner.r + 0.03), 
+                0.002, 
+                Math.sin(angle) * (burner.r + 0.03)
+              ]}
+            >
+              <boxGeometry args={[0.015, 0.002, 0.008]} />
+              <meshStandardMaterial color="#1A1A1A" roughness={0.3} />
+            </mesh>
+          ))}
+        </group>
+      ))}
+      
+      {/* Control panel area */}
+      <mesh position={[0, 0.016, 0.78]}>
+        <boxGeometry args={[1.8, 0.003, 0.12]} />
+        <meshStandardMaterial color="#0A0A0A" roughness={0.1} metalness={0.1} />
+      </mesh>
+      
+      {/* Touch controls */}
+      {[-0.6, -0.3, 0, 0.3, 0.6].map((x, i) => (
+        <group key={i} position={[x, 0.018, 0.78]}>
+          <mesh>
+            <boxGeometry args={[0.06, 0.002, 0.06]} />
+            <meshStandardMaterial color="#1A1A1A" roughness={0.2} />
+          </mesh>
+          {/* LED indicator dot */}
+          <mesh position={[0, 0.002, -0.04]}>
+            <cylinderGeometry args={[0.006, 0.006, 0.002, 8]} />
+            <meshStandardMaterial color="#002200" roughness={0.3} />
           </mesh>
         </group>
       ))}
@@ -1465,53 +1992,110 @@ function SlabCabinet({
   isUpper?: boolean;
   hasHandle?: boolean;
 }) {
-  const doorGap = 0.004;
-  const doorThickness = 0.02;
+  const doorGap = 0.002; // Minimal gap for seamless look
+  const doorThickness = 0.022;
   const isWide = width > 0.6;
+  const panelThickness = 0.018;
   
   // Slightly darker interior
   const interiorColor = useMemo(() => {
     const c = new THREE.Color(color);
-    c.multiplyScalar(0.85);
+    c.multiplyScalar(0.75);
+    return '#' + c.getHexString();
+  }, [color]);
+  
+  // Lighter highlight color
+  const highlightColor = useMemo(() => {
+    const c = new THREE.Color(color);
+    c.multiplyScalar(1.08);
+    return '#' + c.getHexString();
+  }, [color]);
+  
+  // Edge shadow color
+  const edgeShadow = useMemo(() => {
+    const c = new THREE.Color(color);
+    c.multiplyScalar(0.9);
     return '#' + c.getHexString();
   }, [color]);
   
   const renderSlabDoor = (doorW: number, xOff: number) => (
     <group position={[xOff, 0, depth / 2]}>
-      {/* Flat slab door - no frame, just clean panel */}
+      {/* Flat slab door - seamless edge banding */}
       <mesh position={[0, 0, doorThickness / 2]} castShadow>
         <boxGeometry args={[doorW - doorGap * 2, height - doorGap * 2, doorThickness]} />
-        <meshStandardMaterial color={color} roughness={0.35} metalness={0.02} />
+        <meshStandardMaterial color={color} roughness={0.32} metalness={0.03} />
       </mesh>
-      {/* Subtle edge highlight */}
-      <mesh position={[0, (height - doorGap * 2) / 2 - 0.002, doorThickness + 0.001]}>
-        <boxGeometry args={[doorW - doorGap * 2, 0.004, 0.002]} />
-        <meshStandardMaterial color={color} roughness={0.3} metalness={0.05} />
+      
+      {/* Top edge band - slightly lighter for depth */}
+      <mesh position={[0, (height - doorGap * 2) / 2, doorThickness / 2]}>
+        <boxGeometry args={[doorW - doorGap * 2, 0.003, doorThickness + 0.002]} />
+        <meshStandardMaterial color={highlightColor} roughness={0.28} metalness={0.04} />
       </mesh>
-      {/* Shadow line at bottom */}
-      <mesh position={[0, -(height - doorGap * 2) / 2 - 0.002, doorThickness]}>
-        <boxGeometry args={[doorW - doorGap * 2, 0.004, 0.002]} />
-        <meshStandardMaterial color="#000000" transparent opacity={0.08} />
+      
+      {/* Bottom edge band */}
+      <mesh position={[0, -(height - doorGap * 2) / 2, doorThickness / 2]}>
+        <boxGeometry args={[doorW - doorGap * 2, 0.003, doorThickness + 0.002]} />
+        <meshStandardMaterial color={edgeShadow} roughness={0.35} metalness={0.02} />
+      </mesh>
+      
+      {/* Side edge bands */}
+      <mesh position={[-(doorW - doorGap * 2) / 2, 0, doorThickness / 2]}>
+        <boxGeometry args={[0.003, height - doorGap * 2, doorThickness + 0.002]} />
+        <meshStandardMaterial color={edgeShadow} roughness={0.32} metalness={0.03} />
+      </mesh>
+      <mesh position={[(doorW - doorGap * 2) / 2, 0, doorThickness / 2]}>
+        <boxGeometry args={[0.003, height - doorGap * 2, doorThickness + 0.002]} />
+        <meshStandardMaterial color={edgeShadow} roughness={0.32} metalness={0.03} />
+      </mesh>
+      
+      {/* Very subtle shadow line between doors */}
+      <mesh position={[-(doorW - doorGap * 2) / 2 - doorGap / 2, 0, doorThickness]}>
+        <boxGeometry args={[doorGap, height - 0.02, 0.001]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.1} />
       </mesh>
     </group>
   );
   
   return (
     <group position={position}>
-      {/* Cabinet interior */}
+      {/* Cabinet box - interior */}
       <mesh>
-        <boxGeometry args={[width, height, depth]} />
-        <meshStandardMaterial color={interiorColor} roughness={0.7} />
+        <boxGeometry args={[width - 0.004, height - 0.004, depth - 0.004]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.8} />
       </mesh>
       
-      {/* Side panels */}
-      <mesh position={[-width / 2 + 0.008, 0, 0]} castShadow>
-        <boxGeometry args={[0.016, height, depth]} />
-        <meshStandardMaterial color={color} roughness={0.35} metalness={0.02} />
+      {/* Cabinet frame - slightly visible at edges */}
+      {/* Top panel */}
+      <mesh position={[0, height / 2 - panelThickness / 2, 0]} castShadow>
+        <boxGeometry args={[width, panelThickness, depth]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.6} />
       </mesh>
-      <mesh position={[width / 2 - 0.008, 0, 0]} castShadow>
-        <boxGeometry args={[0.016, height, depth]} />
-        <meshStandardMaterial color={color} roughness={0.35} metalness={0.02} />
+      {/* Bottom panel */}
+      <mesh position={[0, -height / 2 + panelThickness / 2, 0]} castShadow>
+        <boxGeometry args={[width, panelThickness, depth]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.6} />
+      </mesh>
+      
+      {/* Side panels - matching door color for seamless look */}
+      <mesh position={[-width / 2 + panelThickness / 2, 0, 0]} castShadow>
+        <boxGeometry args={[panelThickness, height, depth]} />
+        <meshStandardMaterial color={color} roughness={0.35} metalness={0.03} />
+      </mesh>
+      <mesh position={[width / 2 - panelThickness / 2, 0, 0]} castShadow>
+        <boxGeometry args={[panelThickness, height, depth]} />
+        <meshStandardMaterial color={color} roughness={0.35} metalness={0.03} />
+      </mesh>
+      
+      {/* Back panel */}
+      <mesh position={[0, 0, -depth / 2 + 0.006]}>
+        <boxGeometry args={[width - panelThickness * 2, height - panelThickness * 2, 0.012]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.9} />
+      </mesh>
+      
+      {/* Interior shelf (visible through gap) */}
+      <mesh position={[0, 0, -0.05]}>
+        <boxGeometry args={[width - panelThickness * 2 - 0.01, 0.018, depth - 0.1]} />
+        <meshStandardMaterial color={interiorColor} roughness={0.7} />
       </mesh>
       
       {/* Door(s) */}
@@ -1519,16 +2103,12 @@ function SlabCabinet({
         <>
           {renderSlabDoor(width / 2, -width / 4)}
           {renderSlabDoor(width / 2, width / 4)}
-          {/* Handles for double doors - integrated/invisible or minimal */}
+          {/* Modern integrated finger pulls */}
           {hasHandle && (
             <>
-              <mesh position={[width / 4 - 0.05, isUpper ? -height * 0.35 : height * 0.35, depth / 2 + doorThickness + 0.01]} rotation={[Math.PI / 2, 0, 0]}>
-                <boxGeometry args={[0.015, 0.04, 0.8]} />
-                <meshStandardMaterial {...hardwareMat} />
-              </mesh>
-              <mesh position={[-width / 4 + 0.05, isUpper ? -height * 0.35 : height * 0.35, depth / 2 + doorThickness + 0.01]} rotation={[Math.PI / 2, 0, 0]}>
-                <boxGeometry args={[0.015, 0.04, 0.8]} />
-                <meshStandardMaterial {...hardwareMat} />
+              <mesh position={[doorGap / 2, isUpper ? -height * 0.42 : height * 0.42, depth / 2 + doorThickness - 0.005]}>
+                <boxGeometry args={[0.04, 0.12, 0.02]} />
+                <meshStandardMaterial color={interiorColor} roughness={0.5} />
               </mesh>
             </>
           )}
@@ -1537,8 +2117,8 @@ function SlabCabinet({
         <>
           {renderSlabDoor(width, 0)}
           {hasHandle && (
-            <mesh position={[width * 0.35, isUpper ? -height * 0.35 : height * 0.35, depth / 2 + doorThickness + 0.01]} rotation={[Math.PI / 2, 0, 0]}>
-              <boxGeometry args={[0.015, 0.04, 0.6]} />
+            <mesh position={[width * 0.38, isUpper ? -height * 0.42 : height * 0.42, depth / 2 + doorThickness + 0.012]} rotation={[Math.PI / 2, 0, 0]}>
+              <cylinderGeometry args={[0.008, 0.008, 0.12, 12]} />
               <meshStandardMaterial {...hardwareMat} />
             </mesh>
           )}
@@ -1682,6 +2262,153 @@ function TallShelvingUnit({
           </mesh>
         );
       })}
+    </group>
+  );
+}
+
+// Crown molding for top of upper cabinets - adds elegant finish
+function CrownMolding({
+  position,
+  length,
+  color,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  length: number;
+  color: string;
+  rotation?: [number, number, number];
+}) {
+  const moldingHeight = 0.08;
+  const moldingDepth = 0.06;
+  
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Main crown piece */}
+      <mesh castShadow>
+        <boxGeometry args={[length, moldingHeight, moldingDepth]} />
+        <meshStandardMaterial color={color} roughness={0.35} />
+      </mesh>
+      {/* Top lip */}
+      <mesh position={[0, moldingHeight / 2 + 0.01, -moldingDepth / 2 + 0.015]}>
+        <boxGeometry args={[length, 0.02, 0.03]} />
+        <meshStandardMaterial color={color} roughness={0.35} />
+      </mesh>
+      {/* Bottom curve detail */}
+      <mesh position={[0, -moldingHeight / 2, moldingDepth / 2 - 0.01]}>
+        <boxGeometry args={[length, 0.015, 0.02]} />
+        <meshStandardMaterial color={color} roughness={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
+// Light rail - decorative trim under upper cabinets with LED glow
+function LightRail({
+  position,
+  length,
+  color,
+  hasLED = true,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  length: number;
+  color: string;
+  hasLED?: boolean;
+  rotation?: [number, number, number];
+}) {
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Rail trim */}
+      <mesh castShadow>
+        <boxGeometry args={[length, 0.04, 0.03]} />
+        <meshStandardMaterial color={color} roughness={0.4} />
+      </mesh>
+      {/* LED strip glow */}
+      {hasLED && (
+        <mesh position={[0, 0.01, 0.02]}>
+          <boxGeometry args={[length - 0.1, 0.015, 0.01]} />
+          <meshStandardMaterial color="#FFF8E0" emissive="#FFF8E0" emissiveIntensity={0.3} />
+        </mesh>
+      )}
+    </group>
+  );
+}
+
+// Continuous toe kick - runs along entire cabinet run for seamless look
+function ContinuousToeKick({
+  position,
+  length,
+  depth,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  length: number;
+  depth: number;
+  rotation?: [number, number, number];
+}) {
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh>
+        <boxGeometry args={[length, 0.1, depth - 0.08]} />
+        <meshStandardMaterial color="#1A1A1A" roughness={0.9} />
+      </mesh>
+      {/* Recessed shadow line at top */}
+      <mesh position={[0, 0.05, (depth - 0.08) / 2]}>
+        <boxGeometry args={[length, 0.01, 0.02]} />
+        <meshStandardMaterial color="#000000" transparent opacity={0.3} />
+      </mesh>
+    </group>
+  );
+}
+
+// Corner filler panel - fills the gap where two cabinet runs meet
+function CornerFillerPanel({
+  position,
+  height,
+  color,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  height: number;
+  color: string;
+  rotation?: [number, number, number];
+}) {
+  return (
+    <group position={position} rotation={rotation}>
+      <mesh castShadow>
+        <boxGeometry args={[0.08, height, 0.08]} />
+        <meshStandardMaterial color={color} roughness={0.4} />
+      </mesh>
+    </group>
+  );
+}
+
+// End panel - decorative panel on exposed cabinet sides
+function EndPanel({
+  position,
+  width,
+  height,
+  color,
+  rotation = [0, 0, 0],
+}: {
+  position: [number, number, number];
+  width: number;
+  height: number;
+  color: string;
+  rotation?: [number, number, number];
+}) {
+  return (
+    <group position={position} rotation={rotation}>
+      {/* Main panel */}
+      <mesh castShadow>
+        <boxGeometry args={[0.02, height, width]} />
+        <meshStandardMaterial color={color} roughness={0.4} />
+      </mesh>
+      {/* Decorative frame */}
+      <mesh position={[0.011, 0, 0]}>
+        <boxGeometry args={[0.002, height - 0.1, width - 0.1]} />
+        <meshStandardMaterial color={color} roughness={0.35} />
+      </mesh>
     </group>
   );
 }
@@ -1959,54 +2686,130 @@ function DetailedRefrigerator({
   const isIntegrated = style === 'integrated';
   const bodyColor = isIntegrated ? '#F5F5F5' : color;
   
+  // Darker accent color
+  const accentColor = useMemo(() => {
+    const c = new THREE.Color(bodyColor);
+    c.multiplyScalar(0.85);
+    return '#' + c.getHexString();
+  }, [bodyColor]);
+  
   return (
     <group position={position}>
-      {/* Main body */}
+      {/* Main body - slightly recessed */}
       <mesh castShadow>
         <boxGeometry args={[3, 5.8, 2.5]} />
-        <meshStandardMaterial color={bodyColor} roughness={isIntegrated ? 0.5 : 0.2} metalness={isIntegrated ? 0.1 : 0.9} />
+        <meshStandardMaterial color={accentColor} roughness={isIntegrated ? 0.5 : 0.25} metalness={isIntegrated ? 0.1 : 0.88} />
+      </mesh>
+      
+      {/* Top panel detail */}
+      <mesh position={[0, 2.92, 0]} castShadow>
+        <boxGeometry args={[3.02, 0.04, 2.52]} />
+        <meshStandardMaterial color={bodyColor} roughness={0.2} metalness={0.9} />
       </mesh>
       
       {style === 'french-door' && (
         <>
-          {/* Left door */}
-          <mesh position={[-0.75, 0.8, 1.26]}>
-            <boxGeometry args={[1.45, 3.5, 0.05]} />
-            <meshStandardMaterial color={bodyColor} roughness={0.2} metalness={0.9} />
+          {/* Left door with beveled edge */}
+          <mesh position={[-0.75, 0.8, 1.26]} castShadow>
+            <boxGeometry args={[1.42, 3.48, 0.06]} />
+            <meshStandardMaterial color={bodyColor} roughness={0.18} metalness={0.92} />
           </mesh>
-          {/* Right door */}
-          <mesh position={[0.75, 0.8, 1.26]}>
-            <boxGeometry args={[1.45, 3.5, 0.05]} />
-            <meshStandardMaterial color={bodyColor} roughness={0.2} metalness={0.9} />
+          {/* Left door edge highlight */}
+          <mesh position={[-0.04, 0.8, 1.29]}>
+            <boxGeometry args={[0.02, 3.4, 0.01]} />
+            <meshStandardMaterial color="#FFFFFF" transparent opacity={0.08} />
           </mesh>
-          {/* Door gap */}
-          <mesh position={[0, 0.8, 1.27]}>
-            <boxGeometry args={[0.02, 3.5, 0.01]} />
-            <meshStandardMaterial color="#1a1a1a" />
+          
+          {/* Right door with beveled edge */}
+          <mesh position={[0.75, 0.8, 1.26]} castShadow>
+            <boxGeometry args={[1.42, 3.48, 0.06]} />
+            <meshStandardMaterial color={bodyColor} roughness={0.18} metalness={0.92} />
           </mesh>
+          {/* Right door edge highlight */}
+          <mesh position={[0.04, 0.8, 1.29]}>
+            <boxGeometry args={[0.02, 3.4, 0.01]} />
+            <meshStandardMaterial color="#FFFFFF" transparent opacity={0.08} />
+          </mesh>
+          
+          {/* Door gap - recessed shadow */}
+          <mesh position={[0, 0.8, 1.24]}>
+            <boxGeometry args={[0.025, 3.48, 0.02]} />
+            <meshStandardMaterial color="#0A0A0A" />
+          </mesh>
+          
           {/* Freezer drawer */}
-          <mesh position={[0, -2.0, 1.26]}>
-            <boxGeometry args={[2.95, 1.5, 0.05]} />
-            <meshStandardMaterial color={bodyColor} roughness={0.2} metalness={0.9} />
+          <mesh position={[0, -2.0, 1.26]} castShadow>
+            <boxGeometry args={[2.92, 1.45, 0.06]} />
+            <meshStandardMaterial color={bodyColor} roughness={0.18} metalness={0.92} />
           </mesh>
-          {/* Handles - vertical bars */}
-          <mesh position={[-0.1, 0.8, 1.35]} rotation={[0, 0, 0]}>
-            <boxGeometry args={[0.06, 1.2, 0.04]} />
-            <meshStandardMaterial color="#808080" roughness={0.3} metalness={0.9} />
+          {/* Drawer gap line */}
+          <mesh position={[0, -1.22, 1.27]}>
+            <boxGeometry args={[2.9, 0.015, 0.01]} />
+            <meshStandardMaterial color="#0A0A0A" />
           </mesh>
-          <mesh position={[0.1, 0.8, 1.35]} rotation={[0, 0, 0]}>
-            <boxGeometry args={[0.06, 1.2, 0.04]} />
-            <meshStandardMaterial color="#808080" roughness={0.3} metalness={0.9} />
+          
+          {/* Premium tube handles */}
+          <mesh position={[-0.1, 0.8, 1.36]} castShadow>
+            <boxGeometry args={[0.04, 1.1, 0.035]} />
+            <meshStandardMaterial color="#909090" roughness={0.22} metalness={0.95} />
           </mesh>
+          <mesh position={[0.1, 0.8, 1.36]} castShadow>
+            <boxGeometry args={[0.04, 1.1, 0.035]} />
+            <meshStandardMaterial color="#909090" roughness={0.22} metalness={0.95} />
+          </mesh>
+          {/* Handle brackets */}
+          <mesh position={[-0.1, 1.3, 1.32]}>
+            <boxGeometry args={[0.05, 0.03, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          <mesh position={[-0.1, 0.3, 1.32]}>
+            <boxGeometry args={[0.05, 0.03, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          <mesh position={[0.1, 1.3, 1.32]}>
+            <boxGeometry args={[0.05, 0.03, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          <mesh position={[0.1, 0.3, 1.32]}>
+            <boxGeometry args={[0.05, 0.03, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          
           {/* Freezer handle */}
-          <mesh position={[0, -2.0, 1.35]} rotation={[Math.PI / 2, 0, 0]}>
-            <cylinderGeometry args={[0.025, 0.025, 1.5, 12]} />
-            <meshStandardMaterial color="#808080" roughness={0.3} metalness={0.9} />
+          <mesh position={[0, -2.0, 1.36]} rotation={[Math.PI / 2, 0, 0]}>
+            <cylinderGeometry args={[0.022, 0.022, 1.4, 16]} />
+            <meshStandardMaterial color="#909090" roughness={0.22} metalness={0.95} />
           </mesh>
-          {/* Ice/water dispenser */}
+          {/* Freezer handle brackets */}
+          <mesh position={[-0.65, -2.0, 1.32]}>
+            <boxGeometry args={[0.04, 0.05, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          <mesh position={[0.65, -2.0, 1.32]}>
+            <boxGeometry args={[0.04, 0.05, 0.06]} />
+            <meshStandardMaterial color="#808080" roughness={0.25} metalness={0.9} />
+          </mesh>
+          
+          {/* Ice/water dispenser - premium panel */}
           <mesh position={[-0.75, 0.3, 1.3]}>
-            <boxGeometry args={[0.6, 0.8, 0.08]} />
-            <meshStandardMaterial color="#1a1a1a" roughness={0.4} metalness={0.3} />
+            <boxGeometry args={[0.65, 0.85, 0.06]} />
+            <meshStandardMaterial color="#0D0D0D" roughness={0.15} metalness={0.3} />
+          </mesh>
+          {/* Dispenser display */}
+          <mesh position={[-0.75, 0.55, 1.335]}>
+            <boxGeometry args={[0.35, 0.15, 0.01]} />
+            <meshStandardMaterial color="#001500" emissive="#003300" emissiveIntensity={0.1} />
+          </mesh>
+          {/* Dispenser paddle */}
+          <mesh position={[-0.75, 0.05, 1.34]}>
+            <boxGeometry args={[0.25, 0.15, 0.02]} />
+            <meshStandardMaterial color="#2A2A2A" roughness={0.3} metalness={0.5} />
+          </mesh>
+          
+          {/* Brand logo area (subtle) */}
+          <mesh position={[0.5, 2.35, 1.3]}>
+            <boxGeometry args={[0.4, 0.08, 0.01]} />
+            <meshStandardMaterial color={accentColor} roughness={0.3} metalness={0.7} />
           </mesh>
         </>
       )}
@@ -2239,6 +3042,48 @@ export default function ProceduralKitchen() {
   const fridgeWidth = appliances?.refrigerator?.widthFeet ?? 3;
   const fridgeColor = appliances?.refrigerator?.color ?? '#C0C0C0';
   const fridgeStyle = appliances?.refrigerator?.style ?? 'french-door';
+
+  // Fridge always at exact end of cabinet run (flush with cabinets)
+  const fridgePlacement = useMemo(() => {
+    if (!hasFridge || !cabinetRuns.length) return null;
+    const run = cabinetRuns.find(r => r.wall === fridgeWall);
+    if (!run) return null;
+    const runLen = run.lengthFeet;
+    const depthOffset = 1.2; // fridge sticks out like cabinets
+    const atHighEnd = fridgePos >= 0.5; // which end of run (0 = start, 1 = end)
+    const half = fridgeWidth / 2;
+    let position: [number, number, number];
+    let rotation: [number, number, number];
+    switch (fridgeWall) {
+      case 'back':
+        position = [
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+          2.9,
+          -roomDepth / 2 + cabinetDepth / 2 + depthOffset,
+        ];
+        rotation = [0, 0, 0];
+        break;
+      case 'left':
+        position = [
+          -roomWidth / 2 + cabinetDepth / 2 + depthOffset,
+          2.9,
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+        ];
+        rotation = [0, Math.PI / 2, 0];
+        break;
+      case 'right':
+        position = [
+          roomWidth / 2 - cabinetDepth / 2 - depthOffset,
+          2.9,
+          atHighEnd ? runLen / 2 - half : -runLen / 2 + half,
+        ];
+        rotation = [0, -Math.PI / 2, 0];
+        break;
+      default:
+        return null;
+    }
+    return { position, rotation };
+  }, [hasFridge, fridgeWall, fridgePos, fridgeWidth, cabinetRuns, roomWidth, roomDepth, cabinetDepth]);
   
   // Dishwasher
   const hasDishwasher = appliances?.dishwasher?.present ?? false;
@@ -2360,12 +3205,19 @@ export default function ProceduralKitchen() {
 
   const floorSize: [number, number] = [roomWidth + 4, roomDepth + 6];
 
-  // Appliance zones helper
-  const getApplianceZones = (wall: string) => {
+  // Appliance zones helper (runLengthFeet = length of this run, so fridge zone is exact)
+  const getApplianceZones = (wall: string, runLengthFeet?: number) => {
     const zones: Array<{ start: number; end: number; type: string; skipLower: boolean; skipUpper: boolean }> = [];
     if (hasFridge && fridgeWall === wall) {
-      const fridgeNormWidth = fridgeWidth / (wall === 'back' ? roomWidth : roomDepth);
-      zones.push({ start: fridgePos - fridgeNormWidth / 2, end: fridgePos + fridgeNormWidth / 2, type: 'fridge', skipLower: true, skipUpper: true });
+      const atHighEnd = fridgePos >= 0.5;
+      if (runLengthFeet != null && runLengthFeet > 0) {
+        const normWidth = fridgeWidth / runLengthFeet;
+        if (atHighEnd) zones.push({ start: 1 - normWidth, end: 1, type: 'fridge', skipLower: true, skipUpper: true });
+        else zones.push({ start: 0, end: normWidth, type: 'fridge', skipLower: true, skipUpper: true });
+      } else {
+        const fridgeNormWidth = fridgeWidth / (wall === 'back' ? roomWidth : roomDepth);
+        zones.push({ start: fridgePos - fridgeNormWidth / 2, end: fridgePos + fridgeNormWidth / 2, type: 'fridge', skipLower: true, skipUpper: true });
+      }
     }
     if (hasOven && ovenWall === wall) {
       zones.push({ start: ovenPos - 0.08, end: ovenPos + 0.08, type: 'oven', skipLower: true, skipUpper: true });
@@ -2433,7 +3285,7 @@ export default function ProceduralKitchen() {
       {/* CABINETS */}
       {cabinetRuns.map((run, runIdx) => {
         const runLengthFeet = run.lengthFeet;
-        const applianceZones = getApplianceZones(run.wall);
+        const applianceZones = getApplianceZones(run.wall, run.lengthFeet);
         
         // Add windows to appliance zones so upper cabinets are skipped WHERE windows are (not everywhere)
         const windowsOnWall = windows.filter(w => w.wall === run.wall);
@@ -2657,6 +3509,86 @@ export default function ProceduralKitchen() {
             <group position={getCountertopPosition()} rotation={[0, ctDims.rotation, 0]}>
               <RealisticCountertop position={[0, 0, 0]} width={ctDims.width} depth={ctDims.depth} material={countertopMat} hasVeins={countertopHasVeins} />
             </group>
+            
+            {/* CONTINUOUS TOE KICK - seamless along entire run */}
+            {(() => {
+              const toeKickPos = (): [number, number, number] => {
+                switch (run.wall) {
+                  case 'back': return [0, 0.05, -roomDepth / 2 + cabinetDepth / 2 + 0.12];
+                  case 'left': return [-roomWidth / 2 + cabinetDepth / 2 + 0.12, 0.05, 0];
+                  case 'right': return [roomWidth / 2 - cabinetDepth / 2 - 0.12, 0.05, 0];
+                  default: return [0, 0.05, -roomDepth / 2 + cabinetDepth / 2 + 0.12];
+                }
+              };
+              return (
+                <ContinuousToeKick
+                  position={toeKickPos()}
+                  length={run.lengthFeet + 0.1}
+                  depth={cabinetDepth}
+                  rotation={run.wall === 'left' ? [0, Math.PI / 2, 0] : run.wall === 'right' ? [0, -Math.PI / 2, 0] : [0, 0, 0]}
+                />
+              );
+            })()}
+            
+            {/* CROWN MOLDING - elegant finish at top of upper cabinets */}
+            {run.hasUpperCabinets && hasUpperCabinets && (() => {
+              const crownPos = (): [number, number, number] => {
+                const crownY = baseHeight + 1.6 + upperHeight + 0.04;
+                switch (run.wall) {
+                  case 'back': return [0, crownY, -roomDepth / 2 + upperCabinetDepth / 2 - 0.15];
+                  case 'left': return [-roomWidth / 2 + upperCabinetDepth / 2 - 0.15, crownY, 0];
+                  case 'right': return [roomWidth / 2 - upperCabinetDepth / 2 + 0.15, crownY, 0];
+                  default: return [0, crownY, -roomDepth / 2 + upperCabinetDepth / 2 - 0.15];
+                }
+              };
+              return (
+                <CrownMolding
+                  position={crownPos()}
+                  length={run.lengthFeet + 0.1}
+                  color={upperCabinetMat.color}
+                  rotation={run.wall === 'left' ? [0, Math.PI / 2, 0] : run.wall === 'right' ? [0, -Math.PI / 2, 0] : [0, 0, 0]}
+                />
+              );
+            })()}
+            
+            {/* LIGHT RAIL - under upper cabinets with LED glow */}
+            {run.hasUpperCabinets && hasUpperCabinets && hasUndercabLighting && (() => {
+              const railPos = (): [number, number, number] => {
+                const railY = baseHeight + 1.58;
+                switch (run.wall) {
+                  case 'back': return [0, railY, -roomDepth / 2 + upperCabinetDepth / 2 - 0.12];
+                  case 'left': return [-roomWidth / 2 + upperCabinetDepth / 2 - 0.12, railY, 0];
+                  case 'right': return [roomWidth / 2 - upperCabinetDepth / 2 + 0.12, railY, 0];
+                  default: return [0, railY, -roomDepth / 2 + upperCabinetDepth / 2 - 0.12];
+                }
+              };
+              return (
+                <LightRail
+                  position={railPos()}
+                  length={run.lengthFeet}
+                  color={upperCabinetMat.color}
+                  hasLED={true}
+                  rotation={run.wall === 'left' ? [0, Math.PI / 2, 0] : run.wall === 'right' ? [0, -Math.PI / 2, 0] : [0, 0, 0]}
+                />
+              );
+            })()}
+            
+            {/* END PANELS - on exposed cabinet sides */}
+            {runIdx === 0 && (
+              <EndPanel
+                position={(() => {
+                  switch (run.wall) {
+                    case 'back': return [-run.lengthFeet / 2 - 0.01, baseHeight / 2, -roomDepth / 2 + cabinetDepth / 2 + 0.1];
+                    case 'left': return [-roomWidth / 2 + cabinetDepth / 2 + 0.1, baseHeight / 2, -run.lengthFeet / 2 - 0.01];
+                    default: return [-run.lengthFeet / 2 - 0.01, baseHeight / 2, -roomDepth / 2 + cabinetDepth / 2 + 0.1];
+                  }
+                })()}
+                width={cabinetDepth}
+                height={baseHeight}
+                color={cabinetMat.color}
+                rotation={run.wall === 'left' ? [0, Math.PI / 2, 0] : [0, 0, 0]}
+              />
+            )}
           </group>
         );
       })}
@@ -2913,12 +3845,16 @@ export default function ProceduralKitchen() {
               </group>
             )}
             
-            {/* Refrigerator */}
-            {hasFridge && (
+            {/* Refrigerator - always at exact end of cabinet run */}
+            {hasFridge && (fridgePlacement ? (
+              <group position={fridgePlacement.position} rotation={fridgePlacement.rotation}>
+                <DetailedRefrigerator position={[0, 0, 0]} color={fridgeColor} style={fridgeStyle} />
+              </group>
+            ) : (
               <group position={getAppliancePosition(fridgeWall, fridgePos, 2.9, 1.2)} rotation={getApplianceRotation(fridgeWall)}>
                 <DetailedRefrigerator position={[0, 0, 0]} color={fridgeColor} style={fridgeStyle} />
               </group>
-            )}
+            ))}
             
             {/* Dishwasher - next to sink */}
             {hasDishwasher && (
